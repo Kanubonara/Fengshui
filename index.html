@@ -589,40 +589,21 @@ async function analyzeMacro() {
       .join('\n');
 
     // 4) Gemini 거시 풍수 분석
-    const macroPrompt = `당신은 형기론(形氣論)에 정통한 전문 풍수지리 컨설턴트입니다.
-아래 위치 정보를 바탕으로 거시적 풍수지리를 분석하십시오.
+    const macroPrompt = `형기론(形氣論) 전문 풍수지리 컨설턴트로서 아래 위치를 분석하십시오. 순수 JSON만 반환하십시오.
 
-주소: ${address_name}
-위도: ${lat}, 경도: ${lng}
+주소: ${address_name} (위도:${lat}, 경도:${lng})
+반경 3km 지형: ${terrainText}
 
-반경 3km 내 주요 지형:
-${terrainText}
+적용 원칙: 배산임수, 장풍득수, 좌청룡우백호, 전착후관, 살기
 
-아래 원칙을 적용하여 분석하십시오:
-· 배산임수(背山臨水): 뒤에 산, 앞에 물이 있는가
-· 장풍득수(藏風得水): 바람을 막는 지형인가
-· 좌청룡 우백호(左靑龍 右白虎): 좌우 지형 균형
-· 전착후관(前窄後寬): 지형 구조
-· 살기(煞氣): 주변 지형적 위험 요소
-
-반드시 순수 JSON만 반환하십시오:
-{
-  "address": "${address_name}",
-  "overallGrade": "상(上)",
-  "summary": "한 줄 총평 (40자 이내)",
-  "baesanImsu": {"grade": "좋음", "desc": "설명 (40자 이내)"},
-  "jangpungdeoksu": {"grade": "보통", "desc": "설명 (40자 이내)"},
-  "leftRightBalance": {"grade": "좋음", "desc": "설명 (40자 이내)"},
-  "issues": ["주의사항1 (30자 이내)", "주의사항2"],
-  "recommendation": "이 위치의 풍수 활용 조언 (60자 이내)"
-}`;
+{"address":"${address_name}","overallGrade":"상(上)","summary":"총평(30자이내)","baesanImsu":{"grade":"좋음","desc":"설명(25자이내)"},"jangpungdeoksu":{"grade":"보통","desc":"설명(25자이내)"},"leftRightBalance":{"grade":"좋음","desc":"설명(25자이내)"},"issues":["주의사항1(20자이내)","주의사항2(20자이내)"],"recommendation":"조언(40자이내)"}`;
 
     const gemRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           contents:[{role:'user', parts:[{text: macroPrompt}]}],
-          generationConfig:{temperature:0.3, maxOutputTokens:1024, responseMimeType:'application/json'}
+          generationConfig:{temperature:0.3, maxOutputTokens:2048, responseMimeType:'application/json'}
         })
       }
     );
