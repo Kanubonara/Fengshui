@@ -594,14 +594,18 @@ JSON 형식:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
             contents: [{
+              role: 'user',
               parts: [
                 { inline_data: { mime_type: imgMime, data: imgBase64 } },
-                { text: userText }
+                { text: systemPrompt + '\n\n' + userText }
               ]
             }],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 2000 }
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2048,
+              responseMimeType: 'application/json'
+            }
           })
         }
       );
@@ -609,22 +613,38 @@ JSON 형식:
       stopLoading();
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         const msg = err.error?.message || '알 수 없는 오류';
-        if (msg.includes('API_KEY') || res.status === 400) {
-          showState('error');
-          document.getElementById('stateError').innerHTML = `<div class="error-box"><strong>API Key 오류</strong><br>API Key가 올바르지 않습니다. 상단 ⚙️ API 설정에서 다시 확인해 주세요.<br><br><small>${msg}</small></div>`;
-        } else {
-          throw new Error(msg);
-        }
+        showState('error');
+        document.getElementById('stateError').innerHTML = `<div class="error-box"><strong>API 오류 (${res.status})</strong><br>${msg}<br><br><small>상단 ⚙️ API 설정에서 Key를 다시 확인해 주세요.</small></div>`;
         return;
       }
 
       const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('분석 결과를 받아오지 못했습니다. 다시 시도해 주세요.');
-      const parsed = JSON.parse(match[0]);
+
+      // 응답 텍스트 추출 — 여러 구조 대응
+      let text = '';
+      const parts = data.candidates?.[0]?.content?.parts;
+      if (parts) {
+        text = parts.map(p => p.text || '').join('');
+      } else if (data.candidates?.[0]?.content?.text) {
+        text = data.candidates[0].content.text;
+      }
+
+      if (!text) throw new Error('Gemini 응답이 비어있습니다. 다시 시도해 주세요.');
+
+      // JSON 추출 — 코드블록 제거 후 파싱
+      let parsed;
+      try {
+        const clean = text.replace(/```json|```/g, '').trim();
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('JSON 없음');
+        parsed = JSON.parse(match[0]);
+      } catch (e) {
+        console.error('파싱 오류 원문:', text);
+        throw new Error('분석 결과 파싱 오류입니다. 다시 시도해 주세요.');
+      }
+
       renderResult(parsed);
 
     } catch (err) {
