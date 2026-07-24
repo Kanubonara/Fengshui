@@ -303,6 +303,33 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 
         <div class="sec-blk">
           <div class="sec-lbl">사진 촬영 방향 <span class="opt">(카메라가 바라보는 방향)</span></div>
+
+          <!-- 나침반 -->
+          <div id="compassWrap" style="margin-bottom:10px;">
+            <button onclick="startCompass()" id="compassBtn" style="width:100%;padding:9px 12px;border:1px dashed var(--border-strong);border-radius:var(--r-sm);background:var(--surface-1);color:var(--text-secondary);font-size:12px;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.15s;">
+              <span style="font-size:16px;">🧭</span> 나침반으로 방향 자동 감지
+            </button>
+            <div id="compassResult" style="display:none;margin-top:8px;padding:10px 14px;background:var(--bg-success);border:0.5px solid var(--border-success);border-radius:var(--r-sm);display:flex;align-items:center;gap:10px;">
+              <div id="compassDial" style="width:36px;height:36px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;">
+                <svg width="36" height="36" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="16" fill="none" stroke="var(--border-strong)" stroke-width="1"/>
+                  <text x="18" y="7" text-anchor="middle" font-size="7" fill="var(--text-secondary)" font-family="var(--font-sans)">N</text>
+                  <text x="18" y="32" text-anchor="middle" font-size="7" fill="var(--text-secondary)" font-family="var(--font-sans)">S</text>
+                  <text x="5" y="21" text-anchor="middle" font-size="7" fill="var(--text-secondary)" font-family="var(--font-sans)">W</text>
+                  <text x="31" y="21" text-anchor="middle" font-size="7" fill="var(--text-secondary)" font-family="var(--font-sans)">E</text>
+                  <line id="compassNeedle" x1="18" y1="18" x2="18" y2="6" stroke="#E24B4A" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="18" cy="18" r="2" fill="var(--text-primary)"/>
+                </svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:500;color:var(--text-success);" id="compassDirText">—</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:1px;" id="compassDegText">—</div>
+              </div>
+              <button onclick="stopCompass()" style="font-size:11px;color:var(--text-secondary);background:none;border:none;cursor:pointer;padding:2px;">✕ 닫기</button>
+            </div>
+            <div id="compassError" style="display:none;margin-top:6px;padding:8px 12px;background:var(--bg-warning);border-radius:var(--r-sm);font-size:11px;color:var(--text-warning);"></div>
+          </div>
+
           <div class="ori-grid" id="oriGrid">
             <button class="ori-btn" data-v="동향(東)">동향(東)</button>
             <button class="ori-btn" data-v="서향(西)">서향(西)</button>
@@ -451,7 +478,109 @@ function saveKey(){
   closeModal(); updateApiUI(); showState('placeholder');
 }
 
-// ── SELECTORS ──
+// ── COMPASS ──
+let compassWatcher = null;
+
+function degToDir(deg) {
+  const dirs = [
+    { label: '북향(北)', min: 0,   max: 22.5  },
+    { label: '북동향',   min: 22.5, max: 67.5  },
+    { label: '동향(東)', min: 67.5, max: 112.5 },
+    { label: '남동향',   min: 112.5,max: 157.5 },
+    { label: '남향(南)', min: 157.5,max: 202.5 },
+    { label: '남서향',   min: 202.5,max: 247.5 },
+    { label: '서향(西)', min: 247.5,max: 292.5 },
+    { label: '북서향',   min: 292.5,max: 337.5 },
+    { label: '북향(北)', min: 337.5,max: 360   },
+  ];
+  return dirs.find(d => deg >= d.min && deg < d.max)?.label || '북향(北)';
+}
+
+function autoSelectOri(label) {
+  document.querySelectorAll('.ori-btn').forEach(b => {
+    b.classList.remove('on');
+    if (b.dataset.v === label) { b.classList.add('on'); selOri = label; }
+  });
+}
+
+function startCompass() {
+  const errEl = document.getElementById('compassError');
+  const resEl = document.getElementById('compassResult');
+  errEl.style.display = 'none';
+
+  // iOS 13+ requires permission
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') listenCompass();
+        else showCompassError('나침반 권한이 거부되었습니다. 설정에서 허용해 주세요.');
+      })
+      .catch(() => showCompassError('나침반 권한 요청에 실패했습니다.'));
+  } else if (window.DeviceOrientationEvent) {
+    listenCompass();
+  } else {
+    showCompassError('이 기기 또는 브라우저에서는 나침반을 지원하지 않습니다. 아래에서 직접 선택해 주세요.');
+  }
+}
+
+function listenCompass() {
+  resEl = document.getElementById('compassResult');
+  resEl.style.display = 'flex';
+  document.getElementById('compassBtn').style.display = 'none';
+
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+
+function handleOrientation(e) {
+  let deg = null;
+  if (e.absolute && e.alpha !== null) {
+    deg = (360 - e.alpha) % 360;
+  } else if (e.webkitCompassHeading !== undefined) {
+    deg = e.webkitCompassHeading;
+  } else if (e.alpha !== null) {
+    deg = (360 - e.alpha) % 360;
+  }
+  if (deg === null) return;
+
+  deg = Math.round(deg);
+  const dir = degToDir(deg);
+
+  // Rotate needle
+  const needle = document.getElementById('compassNeedle');
+  if (needle) {
+    const angle = deg;
+    const cx = 18, cy = 18, len = 12;
+    const rad = (angle - 90) * Math.PI / 180;
+    const x2 = cx + len * Math.cos(rad - Math.PI);
+    const y2 = cy + len * Math.sin(rad - Math.PI);
+    needle.setAttribute('x2', x2.toFixed(1));
+    needle.setAttribute('y2', y2.toFixed(1));
+    const x1 = cx + 4 * Math.cos(rad);
+    const y1 = cy + 4 * Math.sin(rad);
+    needle.setAttribute('x1', x1.toFixed(1));
+    needle.setAttribute('y1', y1.toFixed(1));
+  }
+
+  document.getElementById('compassDirText').textContent = '📍 ' + dir;
+  document.getElementById('compassDegText').textContent = deg + '° — 아래 버튼에 자동 선택됩니다';
+  autoSelectOri(dir);
+}
+
+function stopCompass() {
+  window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.removeEventListener('deviceorientation', handleOrientation, true);
+  document.getElementById('compassResult').style.display = 'none';
+  document.getElementById('compassBtn').style.display = 'flex';
+}
+
+function showCompassError(msg) {
+  const errEl = document.getElementById('compassError');
+  errEl.style.display = 'block';
+  errEl.textContent = '⚠️ ' + msg;
+}
+
+
 document.getElementById('typeGrid').addEventListener('click',e=>{
   const b=e.target.closest('.type-btn');if(!b)return;
   document.querySelectorAll('.type-btn').forEach(x=>x.classList.remove('on'));
