@@ -841,18 +841,209 @@ async function downloadPDF() {
   btn.disabled = true;
 
   try {
-    // Load jsPDF
+    // 라이브러리 로드
+    if (!window.html2canvas) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    }
     if (!window.jspdf) {
-      await new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     }
 
+    // PDF 리포트 HTML 생성
+    const reportEl = buildReportHTML();
+    document.body.appendChild(reportEl);
+
+    // 캔버스로 캡처
+    const canvas = await html2canvas(reportEl, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+    document.body.removeChild(reportEl);
+
+    // PDF 변환
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pdfW = 210;
+    const pdfH = (canvas.height * pdfW) / canvas.width;
+    const pageH = 297;
+
+    // 여러 페이지 처리
+    let pos = 0;
+    while (pos < pdfH) {
+      if (pos > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, -pos, pdfW, pdfH);
+      pos += pageH;
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    pdf.save(`풍수분석_${selType}_${dateStr}.pdf`);
+    showToast('✅ PDF가 저장되었습니다');
+
+  } catch(err) {
+    console.error(err);
+    showToast('❌ PDF 생성 실패: ' + err.message);
+  } finally {
+    btn.textContent = '📄 PDF 저장';
+    btn.disabled = false;
+  }
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function getModeLabel(mode) {
+  return { full:'종합 분석', furniture:'가구 배치', business:'사업·재물', love:'사랑', remedy:'기운 보완', health:'건강' }[mode] || mode;
+}
+
+function buildReportHTML() {
+  const d = lastResult;
+  const s = d.overallScore || 0;
+  const scoreColor = s >= 75 ? '#2A7A5C' : s >= 55 ? '#C47A1A' : '#B83232';
+  const scoreBg    = s >= 75 ? '#E3F2EC' : s >= 55 ? '#FEF3E2' : '#FAEAEA';
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+
+  const fe = d.fiveElements || {};
+  const elems = [
+    ['목(木) 🌿', fe.wood||0, fe.woodComment||'', '#4A7C1F'],
+    ['화(火) 🔥', fe.fire||0, fe.fireComment||'', '#B83232'],
+    ['토(土) 🪨', fe.earth||0, fe.earthComment||'', '#B8860B'],
+    ['금(金) ⚙️', fe.metal||0, fe.metalComment||'', '#6B6B68'],
+    ['수(水) 💧', fe.water||0, fe.waterComment||'', '#1A5FA5'],
+  ];
+
+  const imgSrc = imgB64 ? `data:${imgMime};base64,${imgB64}` : '';
+
+  const issuesHTML = (d.issues||[]).map(i => {
+    const c = i.level==='good' ? '#2A7A5C' : i.level==='warn' ? '#C47A1A' : '#B83232';
+    const bg = i.level==='good' ? '#f4fbf7' : i.level==='warn' ? '#fffbf2' : '#fdf5f5';
+    return `<div style="background:${bg};border-left:3px solid ${c};border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:4px;">${i.title||''}</div>
+      <div style="font-size:12px;color:#4A4A46;line-height:1.6;margin-bottom:3px;">${i.text||''}</div>
+      ${i.action ? `<div style="font-size:11px;color:${c};font-weight:500;">→ ${i.action}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const furnHTML = (d.furnitureRecommendations||[]).map(f => {
+    const pc = f.priority==='high' ? '#2A7A5C' : '#C47A1A';
+    const pb = f.priority==='high' ? '#E3F2EC' : '#FEF3E2';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#F7F5F0;border-radius:6px;margin-bottom:7px;">
+      <div style="width:4px;border-radius:2px;background:${pc};align-self:stretch;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;color:#1A1A18;">${f.item||''}</span>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:${pb};color:${pc};">${f.priority==='high'?'우선':'권장'}</span>
+        </div>
+        <div style="font-size:12px;color:${pc};font-weight:500;margin-bottom:2px;">📍 ${f.direction||''}</div>
+        <div style="font-size:11px;color:#888880;">${f.reason||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const remedyHTML = (d.remedies||[]).map(r => `
+    <div style="background:#F7F5F0;border-radius:6px;padding:10px 12px;">
+      <div style="font-size:10px;font-weight:600;background:#E3F2EC;color:#1A5440;display:inline-block;padding:2px 8px;border-radius:99px;margin-bottom:6px;">${r.category||''}</div>
+      <div style="font-size:13px;font-weight:600;color:#1A1A18;margin-bottom:3px;">${r.item||''}</div>
+      <div style="font-size:11px;color:#2A7A5C;margin-bottom:2px;">📍 ${r.location||''}</div>
+      <div style="font-size:11px;color:#888880;line-height:1.5;">${r.effect||''}</div>
+    </div>`).join('');
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;';
+
+  wrap.innerHTML = `
+    <!-- 헤더 -->
+    <div style="background:#1A1A18;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:#C9A84C;letter-spacing:0.04em;">풍수 AI 어드바이저</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px;">AI 풍수지리 분석 리포트</div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);">${dateStr}</div>
+    </div>
+
+    <div style="padding:24px 28px;">
+
+      <!-- 공간 정보 -->
+      <div style="background:#F5F3EE;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#4A4A46;display:flex;gap:24px;">
+        <span>공간 유형: <strong style="color:#1A1A18;">${selType}</strong></span>
+        ${selOri ? `<span>촬영 방향: <strong style="color:#1A1A18;">${selOri}</strong></span>` : ''}
+        <span>분석 모드: <strong style="color:#1A1A18;">${getModeLabel(selMode)}</strong></span>
+      </div>
+
+      <!-- 업로드 이미지 -->
+      ${imgSrc ? `<div style="margin-bottom:18px;border-radius:8px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);">
+        <img src="${imgSrc}" style="width:100%;max-height:320px;object-fit:cover;display:block;">
+      </div>` : ''}
+
+      <!-- 종합 점수 -->
+      <div style="background:${scoreBg};border:2px solid ${scoreColor};border-radius:12px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:20px;">
+        <div style="text-align:center;flex-shrink:0;">
+          <div style="font-size:42px;font-weight:700;color:${scoreColor};line-height:1;">${s}</div>
+          <div style="font-size:12px;color:${scoreColor};margin-top:2px;">/ 100점</div>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:#1A1A18;margin-bottom:6px;">${d.scoreComment||''}</div>
+          ${d.imageObservation ? `<div style="font-size:12px;color:#4A4A46;line-height:1.6;"><span style="font-weight:600;color:${scoreColor};">🔍 관찰 </span>${d.imageObservation}</div>` : ''}
+        </div>
+      </div>
+
+      <!-- 오행 분석 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:600;color:#1A1A18;border-bottom:1.5px solid #1A1A18;padding-bottom:6px;margin-bottom:12px;">오행(五行) 기운 분석</div>
+        ${elems.map(([label, val, cmt, color]) => `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;color:#4A4A46;">${label}</span>
+              <span style="font-size:12px;font-weight:600;color:${color};">${val}%</span>
+            </div>
+            <div style="height:7px;background:#ECEAE3;border-radius:99px;overflow:hidden;">
+              <div style="height:100%;width:${val}%;background:${color};border-radius:99px;"></div>
+            </div>
+            ${cmt ? `<div style="font-size:11px;color:#888880;margin-top:3px;">${cmt}</div>` : ''}
+          </div>`).join('')}
+      </div>
+
+      <!-- 분석 포인트 -->
+      ${issuesHTML ? `<div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:600;color:#1A1A18;border-bottom:1.5px solid #1A1A18;padding-bottom:6px;margin-bottom:12px;">분석 포인트</div>
+        ${issuesHTML}
+      </div>` : ''}
+
+      <!-- 가구 배치 -->
+      ${furnHTML ? `<div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:600;color:#1A1A18;border-bottom:1.5px solid #1A1A18;padding-bottom:6px;margin-bottom:12px;">가구 배치 제안</div>
+        ${furnHTML}
+      </div>` : ''}
+
+      <!-- 기운 보완 -->
+      ${remedyHTML ? `<div style="margin-bottom:20px;">
+        <div style="font-size:14px;font-weight:600;color:#1A1A18;border-bottom:1.5px solid #1A1A18;padding-bottom:6px;margin-bottom:12px;">기운 보완 방법</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${remedyHTML}</div>
+      </div>` : ''}
+
+    </div>
+
+    <!-- 푸터 -->
+    <div style="background:#F5F3EE;padding:12px 28px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:10px;color:#888880;">풍수 AI 어드바이저 · kanubonara.github.io/Fengshui · Powered by Google Gemini</div>
+      <div style="font-size:10px;color:#2A7A5C;font-weight:600;">☯ Feng Shui AI Advisor</div>
+    </div>`;
+
+  return wrap;
+}
+
+
     const W = 210, pw = 20; // A4 width, padding
     const cw = W - pw * 2;  // content width
     let y = 20;
@@ -1062,22 +1253,6 @@ async function downloadPDF() {
   }
 }
 
-function getModeLabel(mode) {
-  return { full:'종합 분석', furniture:'가구 배치', business:'사업·재물', love:'사랑', remedy:'기운 보완', health:'건강' }[mode] || mode;
-}
-
-function addSection(doc, title, y, pw, cw, W) {
-  if (y > 250) { doc.addPage(); y = 20; }
-  doc.setFillColor(26, 26, 24);
-  doc.rect(pw, y, cw, 0.5, 'F');
-  y += 4;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(26, 26, 24);
-  doc.text(title, pw, y + 4);
-  y += 10;
-  return y;
-}
 
 
 function showToast(msg){
