@@ -421,6 +421,9 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
                 <button class="share-btn share-link" onclick="copyLink()">
                   🔗 링크 복사
                 </button>
+                <button class="share-btn share-link" onclick="downloadPDF()" id="pdfBtn">
+                  📄 PDF 저장
+                </button>
               </div>
             </div>
 
@@ -830,7 +833,253 @@ function switchTab(id, btn){
   document.getElementById(paneId).classList.add('on');
 }
 
-// ── SHARE ──
+// ── PDF ──
+async function downloadPDF() {
+  if (!lastResult) return;
+  const btn = document.getElementById('pdfBtn');
+  btn.textContent = '⏳ 생성 중...';
+  btn.disabled = true;
+
+  try {
+    // Load jsPDF
+    if (!window.jspdf) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210, pw = 20; // A4 width, padding
+    const cw = W - pw * 2;  // content width
+    let y = 20;
+
+    // ── 헤더 ──
+    doc.setFillColor(26, 26, 24);
+    doc.rect(0, 0, W, 28, 'F');
+    doc.setTextColor(201, 168, 76);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Feng Shui AI Advisor', pw, 13);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(180, 180, 170);
+    doc.text('AI-Powered Feng Shui Analysis Report', pw, 20);
+    // 날짜
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    doc.text(dateStr, W - pw, 20, { align: 'right' });
+    y = 38;
+
+    // ── 공간 정보 ──
+    doc.setFillColor(243, 241, 236);
+    doc.roundedRect(pw, y, cw, 14, 2, 2, 'F');
+    doc.setTextColor(26, 26, 24);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`공간 유형: ${selType}`, pw + 4, y + 6);
+    if (selOri) doc.text(`촬영 방향: ${selOri}`, pw + 70, y + 6);
+    doc.text(`분석 모드: ${getModeLabel(selMode)}`, pw + 4, y + 11);
+    y += 20;
+
+    // ── 업로드 이미지 ──
+    if (imgB64 && imgMime) {
+      try {
+        const imgType = imgMime.includes('png') ? 'PNG' : 'JPEG';
+        // 이미지 비율 계산
+        const img = new Image();
+        img.src = `data:${imgMime};base64,${imgB64}`;
+        await new Promise(r => { img.onload = r; img.onerror = r; });
+        const ratio = img.naturalHeight / img.naturalWidth;
+        const imgW = cw;
+        const imgH = Math.min(imgW * ratio, 80); // 최대 80mm
+        doc.addImage(`data:${imgMime};base64,${imgB64}`, imgType, pw, y, imgW, imgH);
+        y += imgH + 6;
+      } catch(e) { /* 이미지 실패 시 스킵 */ }
+    }
+
+    // ── 종합 점수 ──
+    const s = lastResult.overallScore || 0;
+    const scoreColor = s >= 75 ? [42,122,92] : s >= 55 ? [196,122,26] : [184,50,50];
+    doc.setFillColor(...scoreColor);
+    doc.roundedRect(pw, y, cw, 22, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${s}`, pw + 14, y + 14);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('/ 100', pw + 28, y + 14);
+    doc.setFontSize(10);
+    doc.text(lastResult.scoreComment || '', pw + 50, y + 10);
+    if (lastResult.imageObservation) {
+      doc.setFontSize(8.5);
+      doc.setTextColor(220, 240, 220);
+      doc.text(`관찰: ${lastResult.imageObservation}`, pw + 50, y + 17);
+    }
+    y += 28;
+
+    // ── 오행 분석 ──
+    y = addSection(doc, '오행(五行) 기운 분석', y, pw, cw, W);
+    const fe = lastResult.fiveElements || {};
+    const elems = [
+      ['목(木)', fe.wood||0, fe.woodComment||'', [74,124,31]],
+      ['화(火)', fe.fire||0, fe.fireComment||'', [184,50,50]],
+      ['토(土)', fe.earth||0, fe.earthComment||'', [184,134,11]],
+      ['금(金)', fe.metal||0, fe.metalComment||'', [107,107,104]],
+      ['수(水)', fe.water||0, fe.waterComment||'', [26,95,165]],
+    ];
+    for (const [name, val, cmt, clr] of elems) {
+      if (y > 255) { doc.addPage(); y = 20; }
+      doc.setTextColor(26,26,24);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${name}`, pw, y + 3.5);
+      doc.text(`${val}%`, pw + 18, y + 3.5);
+      // bar bg
+      doc.setFillColor(220, 218, 210);
+      doc.roundedRect(pw + 28, y, cw - 38, 5, 1, 1, 'F');
+      // bar fill
+      doc.setFillColor(...clr);
+      doc.roundedRect(pw + 28, y, (cw - 38) * val / 100, 5, 1, 1, 'F');
+      if (cmt) {
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 100, 95);
+        doc.text(cmt, pw + 28, y + 9);
+      }
+      y += 13;
+    }
+    y += 2;
+
+    // ── 분석 포인트 ──
+    if (lastResult.issues?.length) {
+      y = addSection(doc, '분석 포인트', y, pw, cw, W);
+      for (const issue of lastResult.issues) {
+        if (y > 255) { doc.addPage(); y = 20; }
+        const lc = issue.level === 'good' ? [42,122,92] : issue.level === 'warn' ? [196,122,26] : [184,50,50];
+        doc.setFillColor(...lc);
+        doc.circle(pw + 2, y + 2, 1.5, 'F');
+        doc.setTextColor(26,26,24);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        const titleLines = doc.splitTextToSize(issue.title || '', cw - 8);
+        doc.text(titleLines, pw + 6, y + 3);
+        y += titleLines.length * 4.5 + 1;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(74, 74, 70);
+        const textLines = doc.splitTextToSize(issue.text || '', cw - 6);
+        doc.text(textLines, pw + 6, y);
+        y += textLines.length * 4 + 1;
+        if (issue.action) {
+          doc.setTextColor(...lc);
+          doc.setFontSize(8);
+          const actLines = doc.splitTextToSize('→ ' + issue.action, cw - 6);
+          doc.text(actLines, pw + 6, y);
+          y += actLines.length * 4 + 1;
+        }
+        y += 3;
+      }
+    }
+
+    // ── 가구 배치 ──
+    if (lastResult.furnitureRecommendations?.length) {
+      y = addSection(doc, '가구 배치 제안', y, pw, cw, W);
+      for (const f of lastResult.furnitureRecommendations) {
+        if (y > 255) { doc.addPage(); y = 20; }
+        const pc = f.priority === 'high' ? [42,122,92] : [196,122,26];
+        doc.setFillColor(...pc);
+        doc.roundedRect(pw, y, 1.5, 11, 0.5, 0.5, 'F');
+        doc.setTextColor(26,26,24);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(f.item || '', pw + 5, y + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...pc);
+        doc.text(f.direction || '', pw + 5, y + 9);
+        doc.setTextColor(120,120,115);
+        doc.text(f.reason || '', pw + 60, y + 9);
+        y += 14;
+      }
+    }
+
+    // ── 기운 보완 ──
+    if (lastResult.remedies?.length) {
+      y = addSection(doc, '기운 보완 방법', y, pw, cw, W);
+      const half = Math.ceil(lastResult.remedies.length / 2);
+      for (let i = 0; i < lastResult.remedies.length; i++) {
+        const r = lastResult.remedies[i];
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const rx = pw + col * (cw / 2 + 2);
+        const ry = y + row * 24;
+        if (ry > 255) { doc.addPage(); y = 20; }
+        doc.setFillColor(227, 242, 236);
+        doc.roundedRect(rx, ry, cw / 2 - 2, 21, 2, 2, 'F');
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(26,86,64);
+        doc.text(r.category || '', rx + 3, ry + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(26,26,24);
+        doc.text(r.item || '', rx + 3, ry + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(100,100,95);
+        doc.text(r.location || '', rx + 3, ry + 15);
+        const effLines = doc.splitTextToSize(r.effect || '', cw/2 - 8);
+        doc.text(effLines[0] || '', rx + 3, ry + 19);
+      }
+      y += Math.ceil(lastResult.remedies.length / 2) * 24 + 4;
+    }
+
+    // ── 푸터 ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFillColor(243, 241, 236);
+      doc.rect(0, 287, W, 10, 'F');
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 138, 130);
+      doc.text('풍수 AI 어드바이저 | kanubonara.github.io/Fengshui | Powered by Google Gemini', pw, 293);
+      doc.text(`${i} / ${pageCount}`, W - pw, 293, { align: 'right' });
+    }
+
+    const fileName = `풍수분석_${selType}_${dateStr}.pdf`;
+    doc.save(fileName);
+    showToast('✅ PDF가 저장되었습니다');
+
+  } catch(err) {
+    showToast('❌ PDF 생성 실패: ' + err.message);
+  } finally {
+    btn.textContent = '📄 PDF 저장';
+    btn.disabled = false;
+  }
+}
+
+function getModeLabel(mode) {
+  return { full:'종합 분석', furniture:'가구 배치', business:'사업·재물', love:'사랑', remedy:'기운 보완', health:'건강' }[mode] || mode;
+}
+
+function addSection(doc, title, y, pw, cw, W) {
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFillColor(26, 26, 24);
+  doc.rect(pw, y, cw, 0.5, 'F');
+  y += 4;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(26, 26, 24);
+  doc.text(title, pw, y + 4);
+  y += 10;
+  return y;
+}
+
+
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
