@@ -20,7 +20,8 @@
   --shadow-lg:0 8px 40px rgba(26,26,24,0.14);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;line-height:1.65;}
+html{overflow-x:hidden;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;line-height:1.65;overflow-x:hidden;width:100%;}
 button{cursor:pointer;font-family:inherit;}
 
 /* ── HEADER ── */
@@ -63,26 +64,29 @@ header{background:var(--ink);padding:0 20px;display:flex;align-items:center;just
 /* ── LAYOUT ── */
 .app{max-width:1100px;margin:0 auto;padding:20px 16px 60px;display:grid;grid-template-columns:370px 1fr;gap:20px;align-items:start;}
 @media(max-width:820px){
-  .app{grid-template-columns:1fr;padding:14px 14px 60px;gap:14px;}
-  .hero{padding:28px 16px 24px;}
+  .app{grid-template-columns:1fr;padding:12px 12px 60px;gap:12px;}
+  .hero{padding:24px 16px 20px;}
   .hero-tag{font-size:clamp(13px,3.8vw,18px);letter-spacing:0.05em;}
   .hero-desc{font-size:12px;}
   .h-title{font-size:11px;letter-spacing:0.02em;}
+  .card-bd{padding:14px 12px;}
   .mode-grid{grid-template-columns:repeat(2,1fr) !important;}
   .share-bar{flex-wrap:wrap;gap:6px;}
   .share-btn{font-size:11px;padding:6px 10px;}
   .tabs{gap:0;}
-  .tab{padding:7px 9px;font-size:11px;}
+  .tab{padding:7px 8px;font-size:11px;}
   .remedy-grid{grid-template-columns:1fr !important;}
   .bagua-grid{grid-template-columns:repeat(3,1fr);}
+  .type-grid{grid-template-columns:repeat(3,1fr);}
+  .ori-grid{grid-template-columns:repeat(4,1fr);}
 }
 
 /* ── CARD ── */
-.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow);}
-.card-hd{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card{background:#fff;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;width:100%;}
+.card-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .card-hd-ico{width:30px;height:30px;border-radius:50%;background:var(--jade-lt);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
 .card-hd-ttl{font-size:13px;font-weight:600;}
-.card-bd{padding:18px 20px;}
+.card-bd{padding:16px;}
 
 /* ── INPUT ELEMENTS ── */
 .sec-lbl{font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;}
