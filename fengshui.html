@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>풍수 AI 어드바이저</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap');
+
+  :root {
+    --ink:      #1C1C1A;
+    --ink-mid:  #4A4A46;
+    --ink-soft: #888880;
+    --paper:    #F7F5F0;
+    --paper-2:  #EDEAE3;
+    --jade:     #2A7A5C;
+    --jade-lt:  #E3F2EC;
+    --jade-dk:  #1A5440;
+    --gold:     #B8860B;
+    --gold-lt:  #FDF6E3;
+    --red-soft: #C0392B;
+    --red-lt:   #FDECEA;
+    --border:   rgba(28,28,26,0.10);
+    --r:        14px;
+    --r-sm:     8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.65;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 62px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .h-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .h-symbol {
+    font-size: 22px;
+    line-height: 1;
+    color: #fff;
+    filter: drop-shadow(0 0 6px rgba(42,122,92,0.6));
+  }
+  .h-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+  .h-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 1px;
+  }
+  .h-badge {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: var(--jade);
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    padding: 56px 24px 40px;
+    background: var(--ink);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '☯';
+    position: absolute;
+    font-size: 320px;
+    color: rgba(255,255,255,0.025);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    line-height: 1;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--jade);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .hero-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  .hero-title em { color: var(--jade); font-style: normal; }
+  .hero-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .app {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: #fff;
+    border-radius: var(--r);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-head-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--jade-lt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .card-head-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .card-body { padding: 20px; }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .sec-block { margin-bottom: 22px; }
+
+  /* ── TYPE GRID ── */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .type-btn {
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .type-btn:hover { border-color: var(--jade); background: var(--jade-lt); }
+  .type-btn.on { border: 2px solid var(--jade); background: var(--jade-lt); }
+  .type-btn .te { font-size: 20px; }
+  .type-btn .tl { font-size: 11px; font-weight: 500; color: var(--ink-mid); }
+
+  /* ── ORI GRID ── */
+  .ori-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .ori-btn {
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 8px 4px;
+    font-size: 11px;
+    color: var(--ink-mid);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .ori-btn:hover { border-color: var(--jade); color: var(--jade); }
+  .ori-btn.on { border: 2px solid var(--jade); background: var(--jade-lt); color: var(--jade-dk); font-weight: 600; }
+
+  /* ── MODE GRID ── */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mode-btn {
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { border-color: var(--jade); background: var(--jade-lt); }
+  .mode-btn.on { border: 2px solid var(--jade); background: var(--jade-lt); }
+  .mode-btn .mi { font-size: 18px; display: block; margin-bottom: 4px; }
+  .mode-btn .ml { font-size: 12px; font-weight: 600; color: var(--ink); display: block; }
+  .mode-btn .md { font-size: 10px; color: var(--ink-soft); display: block; margin-top: 2px; }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--r-sm);
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+  .drop-zone:hover, .drop-zone.drag { border-color: var(--jade); background: var(--jade-lt); }
+  .drop-zone.has-img { padding: 0; border-style: solid; border-color: var(--jade); }
+  .drop-zone .dz-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+  .drop-zone .dz-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .drop-zone .dz-sub { font-size: 11px; color: var(--ink-soft); }
+  .drop-zone img { width: 100%; height: 180px; object-fit: cover; display: block; border-radius: calc(var(--r-sm) - 2px); }
+  .clear-img {
+    display: none;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .clear-img:hover { color: var(--red-soft); }
+  #fileInput { display: none; }
+
+  /* ── EXTRA INFO ── */
+  .extra-input {
+    width: 100%;
+    min-height: 68px;
+    padding: 10px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--paper);
+    color: var(--ink);
+    resize: vertical;
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+  }
+  .extra-input:focus { outline: none; border-color: var(--jade); }
+
+  /* ── ANALYZE BTN ── */
+  .analyze-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--jade);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .analyze-btn:hover { background: var(--jade-dk); }
+  .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── RESULT PANEL ── */
+  .result-panel {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .placeholder-sym { font-size: 52px; opacity: 0.15; line-height: 1; }
+  .placeholder p { font-size: 14px; line-height: 1.7; }
+
+  /* ── HOW TO USE ── */
+  .how-box {
+    padding: 20px;
+    background: var(--jade-lt);
+    border-radius: var(--r-sm);
+    margin-bottom: 20px;
+    border: 1px solid rgba(42,122,92,0.15);
+  }
+  .how-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--jade-dk);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .how-steps { display: flex; flex-direction: column; gap: 10px; }
+  .how-step { display: flex; align-items: flex-start; gap: 10px; }
+  .how-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--jade);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .how-text { font-size: 12px; color: var(--ink-mid); line-height: 1.6; }
+  .how-text strong { color: var(--ink); }
+
+  /* ── PROMPT RESULT ── */
+  .prompt-result { display: none; }
+  .prompt-result.show { display: block; }
+
+  .prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .prompt-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--jade-dk);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .copy-btn {
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: var(--jade);
+    color: #fff;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .copy-btn:hover { background: var(--jade-dk); }
+  .copy-btn.copied { background: #555; }
+
+  .prompt-box {
+    background: var(--ink);
+    color: rgba(255,255,255,0.85);
+    border-radius: var(--r-sm);
+    padding: 16px;
+    font-size: 12px;
+    line-height: 1.8;
+    max-height: 260px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: 'Noto Sans KR', sans-serif;
+    margin-bottom: 14px;
+  }
+
+  .claude-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px;
+    background: #fff;
+    border: 2px solid var(--jade);
+    border-radius: var(--r-sm);
+    color: var(--jade-dk);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    transition: all 0.15s;
+    margin-bottom: 10px;
+  }
+  .claude-link-btn:hover { background: var(--jade-lt); }
+
+  .tip-box {
+    background: var(--gold-lt);
+    border: 1px solid rgba(184,134,11,0.2);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    font-size: 11px;
+    color: #7a5800;
+    line-height: 1.7;
+  }
+  .tip-box strong { color: var(--gold); }
+
+  /* ── IMG PREVIEW IN PROMPT ── */
+  .img-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(42,122,92,0.2);
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 11px;
+    color: #9FE1CB;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-logo">
+    <span class="h-symbol">☯</span>
+    <div>
+      <div class="h-title">풍수 AI 어드바이저</div>
+      <div class="h-sub">사진·도면·지도 기반 기운 분석</div>
+    </div>
+  </div>
+  <span class="h-badge">Beta</span>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">AI-Powered Feng Shui Analysis</div>
+  <h1 class="hero-title">사진 한 장으로<br><em>공간의 기운</em>을 읽다</h1>
+  <p class="hero-desc">주거·상업·업무 공간의 사진을 업로드하면 오행·팔괘·가구 배치까지 AI가 분석합니다</p>
+</div>
+
+<div class="app">
+
+  <!-- ── LEFT: INPUT ── -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <div class="card-head-icon">🏠</div>
+        <div class="card-head-title">공간 설정</div>
+      </div>
+      <div class="card-body">
+
+        <div class="sec-block">
+          <div class="sec-label">공간 유형</div>
+          <div class="type-grid" id="typeGrid">
+            <button class="type-btn on" data-v="주거용 주택"><span class="te">🏠</span><span class="tl">주거</span></button>
+            <button class="type-btn" data-v="상업용 건물"><span class="te">🏪</span><span class="tl">상업</span></button>
+            <button class="type-btn" data-v="업무용 오피스"><span class="te">🏢</span><span class="tl">사무</span></button>
+            <button class="type-btn" data-v="식음료 매장"><span class="te">🍽️</span><span class="tl">식음료</span></button>
+            <button class="type-btn" data-v="의료시설"><span class="te">🏥</span><span class="tl">의료</span></button>
+            <button class="type-btn" data-v="생산·공장"><span class="te">🏭</span><span class="tl">생산</span></button>
+          </div>
+        </div>
+
+        <div class="sec-block">
+          <div class="sec-label">주 출입구 방향 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(선택)</span></div>
+          <div class="ori-grid" id="oriGrid">
+            <button class="ori-btn" data-v="동향(東)">동향(東)</button>
+            <button class="ori-btn" data-v="서향(西)">서향(西)</button>
+            <button class="ori-btn" data-v="남향(南)">남향(南)</button>
+            <button class="ori-btn" data-v="북향(北)">북향(北)</button>
+            <button class="ori-btn" data-v="남동향">남동향</button>
+            <button class="ori-btn" data-v="남서향">남서향</button>
+            <button class="ori-btn" data-v="북동향">북동향</button>
+            <button class="ori-btn" data-v="북서향">북서향</button>
+          </div>
+        </div>
+
+        <div class="sec-block">
+          <div class="sec-label">분석 모드</div>
+          <div class="mode-grid" id="modeGrid">
+            <button class="mode-btn on" data-v="full"><span class="mi">✨</span><span class="ml">종합 분석</span><span class="md">오행·팔괘·가구 전체</span></button>
+            <button class="mode-btn" data-v="furniture"><span class="mi">🛋️</span><span class="ml">가구 배치</span><span class="md">최적 배치 집중</span></button>
+            <button class="mode-btn" data-v="business"><span class="mi">💰</span><span class="ml">사업·재물운</span><span class="md">재물·명예운 집중</span></button>
+            <button class="mode-btn" data-v="remedy"><span class="mi">🌿</span><span class="ml">비보 제안</span><span class="md">식물·소품 보완</span></button>
+          </div>
+        </div>
+
+        <div class="sec-block">
+          <div class="sec-label">공간 이미지</div>
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <span class="dz-icon">📷</span>
+            <div class="dz-title">클릭하거나 드래그하여 업로드</div>
+            <div class="dz-sub">JPG, PNG, WEBP · 최대 10MB</div>
+          </div>
+          <button class="clear-img" id="clearBtn" onclick="clearImg()">× 이미지 제거</button>
+          <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+        </div>
+
+        <div class="sec-block" style="margin-bottom:0;">
+          <div class="sec-label">추가 정보 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(선택)</span></div>
+          <textarea class="extra-input" id="extraInfo" placeholder="층수, 건물 연식, 주변 환경(산·도로·수목 등), 특이사항을 입력하면 분석 정밀도가 높아집니다"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="generate()">
+      ✨ 분석 프롬프트 생성
+    </button>
+  </div>
+
+  <!-- ── RIGHT: RESULT ── -->
+  <div class="result-panel">
+    <div class="card" style="flex:1;">
+      <div class="card-head">
+        <div class="card-head-icon">☯</div>
+        <div class="card-head-title">풍수 분석 결과</div>
+      </div>
+      <div class="card-body">
+
+        <!-- How to use -->
+        <div class="how-box">
+          <div class="how-title">📌 사용 방법</div>
+          <div class="how-steps">
+            <div class="how-step"><div class="how-num">1</div><div class="how-text">왼쪽에서 <strong>공간 유형, 방향, 분석 모드</strong>를 선택하세요</div></div>
+            <div class="how-step"><div class="how-num">2</div><div class="how-text"><strong>공간 사진</strong>을 업로드하세요 (사진·도면·지도 모두 가능)</div></div>
+            <div class="how-step"><div class="how-num">3</div><div class="how-text"><strong>분석 프롬프트 생성</strong> 버튼을 누르면 Claude 전용 분석 요청문이 생성됩니다</div></div>
+            <div class="how-step"><div class="how-num">4</div><div class="how-text">프롬프트를 <strong>복사</strong>하고 Claude.ai에서 <strong>이미지와 함께 붙여넣기</strong>하세요</div></div>
+          </div>
+        </div>
+
+        <!-- Placeholder -->
+        <div class="placeholder" id="placeholder">
+          <div class="placeholder-sym">☯</div>
+          <p>공간 유형과 이미지를 선택하고<br>분석 프롬프트를 생성해 주세요</p>
+        </div>
+
+        <!-- Result -->
+        <div class="prompt-result" id="promptResult">
+
+          <div class="prompt-header">
+            <div class="prompt-label">📋 생성된 분석 프롬프트</div>
+            <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">
+              📋 복사
+            </button>
+          </div>
+
+          <div class="prompt-box" id="promptBox"></div>
+
+          <a href="https://claude.ai" target="_blank" class="claude-link-btn">
+            ☯ Claude.ai 열기 → 이미지 첨부 후 프롬프트 붙여넣기
+          </a>
+
+          <div class="tip-box">
+            <strong>💡 분석 팁:</strong> Claude.ai 채팅창에서 이미지를 먼저 첨부(📎)한 다음 복사한 프롬프트를 붙여넣고 전송하면 이미지를 직접 보고 분석합니다. 사진 여러 장(외부·내부·도면)을 함께 올리면 더 정밀한 결과를 받을 수 있습니다.
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  풍수 AI 어드바이저 · Powered by Claude (Anthropic) · 분석 결과는 참고용이며 전문 컨설팅을 대체하지 않습니다
+</footer>
+
+<script>
+  let selType = '주거용 주택';
+  let selOri  = '';
+  let selMode = 'full';
+  let hasImg  = false;
+  let imgName = '';
+
+  /* ── TOGGLE BUTTONS ── */
+  document.getElementById('typeGrid').addEventListener('click', e => {
+    const b = e.target.closest('.type-btn');
+    if (!b) return;
+    document.querySelectorAll('.type-btn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    selType = b.dataset.v;
+  });
+
+  document.getElementById('oriGrid').addEventListener('click', e => {
+    const b = e.target.closest('.ori-btn');
+    if (!b) return;
+    if (b.classList.contains('on')) { b.classList.remove('on'); selOri = ''; }
+    else {
+      document.querySelectorAll('.ori-btn').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      selOri = b.dataset.v;
+    }
+  });
+
+  document.getElementById('modeGrid').addEventListener('click', e => {
+    const b = e.target.closest('.mode-btn');
+    if (!b) return;
+    document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    selMode = b.dataset.v;
+  });
+
+  /* ── FILE UPLOAD ── */
+  const dropZone = document.getElementById('dropZone');
+  const clearBtn = document.getElementById('clearBtn');
+
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+  });
+
+  function handleFile(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { alert('10MB 이하 이미지만 업로드 가능합니다.'); return; }
+    imgName = file.name;
+    hasImg = true;
+    const reader = new FileReader();
+    reader.onload = e => {
+      dropZone.classList.add('has-img');
+      dropZone.innerHTML = `<img src="${e.target.result}" alt="미리보기">`;
+      dropZone.onclick = null;
+      clearBtn.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImg() {
+    hasImg = false;
+    imgName = '';
+    dropZone.classList.remove('has-img');
+    dropZone.innerHTML = `<span class="dz-icon">📷</span><div class="dz-title">클릭하거나 드래그하여 업로드</div><div class="dz-sub">JPG, PNG, WEBP · 최대 10MB</div>`;
+    dropZone.onclick = () => document.getElementById('fileInput').click();
+    clearBtn.style.display = 'none';
+    document.getElementById('fileInput').value = '';
+  }
+
+  /* ── PROMPT TEMPLATES ── */
+  const modePrompts = {
+    full: `아래 항목을 모두 분석해 주세요:
+
+1. 【공간 관찰】 이미지에서 보이는 출입구·창문·동선·구조·가구 배치 등 특징
+2. 【종합 점수】 100점 기준 풍수 점수 및 채점 근거 (항목별 세분화)
+3. 【오행(五行)】 목·화·토·금·수 각 기운의 현재 수준(%) 및 과부족 평가
+4. 【팔괘(八卦)】 9방위별 길흉(吉凶) 분석 — 기호·이름·의미·현 상태·개선 팁
+5. 【문제점 3가지】 우선순위 순으로 문제점과 구체적 해결 방법
+6. 【가구 배치】 주요 가구·용도별 최적 방향 및 위치 제안 (배산임수 원칙 적용)
+7. 【비보(裨補)】 식물·조명·색상·소품을 활용한 기운 보완 방법`,
+
+    furniture: `가구 배치 중심으로 분석해 주세요:
+
+1. 【현황 진단】 현재 가구 배치의 풍수적 문제점
+2. 【주요 가구별 최적 위치】 침대·소파·책상·식탁 등 가구별 방향 및 근거
+3. 【배산임수 적용】 등 뒤가 든든하고 앞이 트인 배치 방안
+4. 【기 흐름 개선】 동선·기(氣) 흐름을 막는 요소 제거 방안
+5. 【즉시 실행 TOP 3】 비용·노력 대비 효과가 큰 배치 변경 3가지`,
+
+    business: `사업운·재물운 중심으로 분석해 주세요:
+
+1. 【재물운(財物運)】 금전·매출에 영향을 주는 방위 분석
+2. 【사업운(事業運)】 성장·발전에 유리한 방향과 배치
+3. 【명예운(名譽運)】 브랜드·신뢰 형성에 유리한 구조
+4. 【귀인(貴人) 방위】 좋은 인연·파트너십을 부르는 방향
+5. 【매출 향상 배치 3가지】 즉시 실행 가능한 공간 조정 방안`,
+
+    remedy: `비보(裨補) 방법을 중심으로 제안해 주세요:
+
+1. 【기운 흐름 진단】 현재 공간의 풍수적 약점
+2. 【식물 비보】 종류·위치·방향별 효과 (구체적 식물명 포함)
+3. 【조명 비보】 밝기·색온도·방향 조정 방안
+4. 【색상 비보】 벽·바닥·소품 색상 추천 및 근거
+5. 【소품 비보】 수정·거울·수반 등 소품 활용법
+6. 【저비용 즉시 실행 TOP 5】 비용 0~5만원으로 가능한 비보 방법`
+  };
+
+  /* ── GENERATE ── */
+  function generate() {
+    const extra = document.getElementById('extraInfo').value.trim();
+    const oriText = selOri ? `, 주 출입구 방향: ${selOri}` : '';
+    const imgLine = hasImg ? `\n📎 첨부 이미지: ${imgName} (이 채팅창에 이미지를 함께 첨부해 주세요)\n` : '\n⚠️ 이미지를 Claude.ai 채팅창에 첨부하여 전송해 주세요\n';
+    const extraLine = extra ? `\n📝 추가 정보: ${extra}\n` : '';
+
+    const prompt = `[풍수지리 분석 요청]
+공간 유형: ${selType}${oriText}
+${imgLine}${extraLine}
+${modePrompts[selMode]}
+
+분석 결과는 각 항목별로 구체적인 수치와 방향을 포함하여 전문 컨설턴트 수준으로 작성해 주세요.`;
+
+    document.getElementById('promptBox').textContent = prompt;
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('promptResult').classList.add('show');
+
+    // Scroll to result on mobile
+    if (window.innerWidth <= 800) {
+      document.querySelector('.result-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  /* ── COPY ── */
+  function copyPrompt() {
+    const text = document.getElementById('promptBox').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✅ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 복사'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
