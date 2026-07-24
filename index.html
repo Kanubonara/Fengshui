@@ -540,50 +540,9 @@
     const oriText = selOri ? `, 주 출입구 방향: ${selOri}` : '';
     const extraText = extra ? `\n추가 정보: ${extra}` : '';
 
-    const systemPrompt = `당신은 20년 경력의 전문 풍수지리 컨설턴트입니다. 업로드된 공간 이미지를 실제로 분석하여 풍수지리 진단을 수행합니다.
-반드시 순수 JSON만 반환하고 마크다운 코드블록이나 다른 텍스트를 절대 포함하지 마세요.
+    const systemPrompt = `전문 풍수지리 컨설턴트로서 이미지를 분석해 아래 JSON만 반환하세요. 다른 텍스트 없이 JSON만 출력하세요. 각 문자열은 30자 이내로 간결하게 작성하세요.
 
-JSON 형식:
-{
-  "overallScore": 75,
-  "scoreComment": "종합 평가 한 줄 (40자 이내)",
-  "imageObservation": "이미지에서 실제 관찰한 공간 특징 (60자 이내)",
-  "fiveElements": {
-    "wood": 60, "woodComment": "목 기운 평가",
-    "fire": 40, "fireComment": "화 기운 평가",
-    "earth": 80, "earthComment": "토 기운 평가",
-    "metal": 55, "metalComment": "금 기운 평가",
-    "water": 30, "waterComment": "수 기운 평가"
-  },
-  "baguaAnalysis": [
-    {"direction":"남(南)","symbol":"☲","name":"이(離)","meaning":"명예·인기","status":"good","desc":"분석 내용"},
-    {"direction":"남동(南東)","symbol":"☴","name":"손(巽)","meaning":"재물·인연","status":"good","desc":"분석 내용"},
-    {"direction":"동(東)","symbol":"☳","name":"진(震)","meaning":"활력·발전","status":"good","desc":"분석 내용"},
-    {"direction":"북동(北東)","symbol":"☶","name":"간(艮)","meaning":"건강·안정","status":"warn","desc":"분석 내용"},
-    {"direction":"북(北)","symbol":"☵","name":"감(坎)","meaning":"사업·지혜","status":"bad","desc":"분석 내용"},
-    {"direction":"북서(北西)","symbol":"☰","name":"건(乾)","meaning":"리더십·권위","status":"good","desc":"분석 내용"},
-    {"direction":"서(西)","symbol":"☱","name":"태(兌)","meaning":"창의·기쁨","status":"warn","desc":"분석 내용"},
-    {"direction":"남서(南西)","symbol":"☷","name":"곤(坤)","meaning":"가정·화합","status":"good","desc":"분석 내용"},
-    {"direction":"중앙","symbol":"☯","name":"태극(太極)","meaning":"전체 균형","status":"good","desc":"분석 내용"}
-  ],
-  "issues": [
-    {"level":"good","title":"긍정 요소 제목","text":"상세 설명","action":"활용 방법"},
-    {"level":"warn","title":"주의 요소 제목","text":"상세 설명","action":"개선 방법"},
-    {"level":"bad","title":"개선 필요 제목","text":"상세 설명","action":"해결 방법"}
-  ],
-  "furnitureRecommendations": [
-    {"item":"소파","direction":"북쪽 벽 등지고 남향","reason":"배산임수 원칙","priority":"high"},
-    {"item":"침대","direction":"동남쪽 배치","reason":"건강운 강화","priority":"high"},
-    {"item":"책상","direction":"북향 등지기","reason":"집중력 향상","priority":"medium"},
-    {"item":"주방","direction":"남동쪽 배치","reason":"화기 활용","priority":"medium"}
-  ],
-  "remedies": [
-    {"category":"식물","item":"관음죽","location":"북쪽 코너","effect":"수기 보완 + 나쁜 기운 차단"},
-    {"category":"조명","item":"간접 조명 2700K","location":"북동 코너","effect":"음기 해소"},
-    {"category":"색상","item":"청색 쿠션·러그","location":"거실 전반","effect":"수기 보완"},
-    {"category":"소품","item":"수정구슬","location":"창가","effect":"형살 반사 + 기 정화"}
-  ]
-}`;
+{"overallScore":75,"scoreComment":"종합평가(30자이내)","imageObservation":"관찰내용(30자이내)","fiveElements":{"wood":60,"woodComment":"평가(20자이내)","fire":40,"fireComment":"평가(20자이내)","earth":80,"earthComment":"평가(20자이내)","metal":55,"metalComment":"평가(20자이내)","water":30,"waterComment":"평가(20자이내)"},"baguaAnalysis":[{"direction":"남(南)","symbol":"☲","name":"이(離)","meaning":"명예·인기","status":"good","desc":"평가(20자이내)"},{"direction":"남동(南東)","symbol":"☴","name":"손(巽)","meaning":"재물·인연","status":"good","desc":"평가"},{"direction":"동(東)","symbol":"☳","name":"진(震)","meaning":"활력·발전","status":"good","desc":"평가"},{"direction":"북동(北東)","symbol":"☶","name":"간(艮)","meaning":"건강·안정","status":"warn","desc":"평가"},{"direction":"북(北)","symbol":"☵","name":"감(坎)","meaning":"사업·지혜","status":"bad","desc":"평가"},{"direction":"북서(北西)","symbol":"☰","name":"건(乾)","meaning":"리더십·권위","status":"good","desc":"평가"},{"direction":"서(西)","symbol":"☱","name":"태(兌)","meaning":"창의·기쁨","status":"warn","desc":"평가"},{"direction":"남서(南西)","symbol":"☷","name":"곤(坤)","meaning":"가정·화합","status":"good","desc":"평가"},{"direction":"중앙","symbol":"☯","name":"태극(太極)","meaning":"전체균형","status":"good","desc":"평가"}],"issues":[{"level":"good","title":"긍정요소(15자이내)","text":"설명(30자이내)","action":"팁(20자이내)"},{"level":"warn","title":"주의요소(15자이내)","text":"설명(30자이내)","action":"팁(20자이내)"},{"level":"bad","title":"개선요소(15자이내)","text":"설명(30자이내)","action":"팁(20자이내)"}],"furnitureRecommendations":[{"item":"소파","direction":"배치방향(15자이내)","reason":"이유(15자이내)","priority":"high"},{"item":"침대","direction":"배치방향","reason":"이유","priority":"high"},{"item":"책상","direction":"배치방향","reason":"이유","priority":"medium"},{"item":"주방","direction":"배치방향","reason":"이유","priority":"medium"}],"remedies":[{"category":"식물","item":"추천식물(10자이내)","location":"위치(10자이내)","effect":"효과(20자이내)"},{"category":"조명","item":"조명종류","location":"위치","effect":"효과"},{"category":"색상","item":"색상추천","location":"위치","effect":"효과"},{"category":"소품","item":"소품추천","location":"위치","effect":"효과"}]}`;
 
     const userText = `공간 유형: ${selType}${oriText}${extraText}\n\n${modeMap[selMode]}`;
 
@@ -602,8 +561,8 @@ JSON 형식:
               ]
             }],
             generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 2048,
+              temperature: 0.3,
+              maxOutputTokens: 4096,
               responseMimeType: 'application/json'
             }
           })
