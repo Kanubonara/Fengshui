@@ -248,14 +248,24 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <div class="modal-title">🔑 API Key 설정</div>
-    <div class="modal-desc">Google AI Studio에서 발급받은 Gemini API Key를 입력하세요.<br>키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
-    <div class="modal-lbl">Gemini API Key</div>
-    <input class="modal-inp" type="password" id="apiKeyInput" placeholder="AIza...로 시작하는 키 입력">
+    <div class="modal-desc">각 서비스 API Key를 입력하세요.<br>키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.</div>
+
+    <div class="modal-lbl" style="margin-bottom:6px;">Gemini API Key <span style="font-weight:400;font-size:10px;text-transform:none;">(공간 사진 분석용)</span></div>
+    <input class="modal-inp" type="password" id="apiKeyInput" placeholder="AIza...로 시작하는 키 입력" style="margin-bottom:16px;">
+
+    <div style="height:1px;background:var(--border);margin-bottom:16px;"></div>
+
+    <div class="modal-lbl" style="margin-bottom:6px;">카카오 REST API Key <span style="font-weight:400;font-size:10px;text-transform:none;">(주소 → 위경도 변환)</span></div>
+    <input class="modal-inp" type="password" id="kakaoRestInput" placeholder="카카오 REST API Key 입력" style="margin-bottom:12px;">
+
+    <div class="modal-lbl" style="margin-bottom:6px;">카카오 JavaScript Key <span style="font-weight:400;font-size:10px;text-transform:none;">(지도 표시용)</span></div>
+    <input class="modal-inp" type="password" id="kakaoJsInput" placeholder="카카오 JavaScript Key 입력">
+
     <div class="modal-btns">
       <button class="modal-save" onclick="saveKey()">저장</button>
       <button class="modal-cancel" onclick="closeModal()">취소</button>
     </div>
-    <div class="modal-note">💡 <strong>aistudio.google.com</strong>에서 무료로 발급 가능합니다.</div>
+    <div class="modal-note">💡 Gemini: <strong>aistudio.google.com</strong> · 카카오: <strong>developers.kakao.com</strong> 에서 발급</div>
   </div>
 </div>
 
@@ -391,6 +401,15 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
           <div style="margin-top:6px;font-size:10px;color:var(--ink-soft);text-align:center;">정면 방향 기준: 좌측=정면 90° 왼쪽 · 우측=정면 90° 오른쪽 · 후면=반대 방향</div>
         </div>
 
+        <div class="sec-blk">
+          <div class="sec-lbl">도로명 주소 <span class="opt">(거시 풍수 분석 · 선택)</span></div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="addrInput" placeholder="예) 서울 용산구 이태원로 29" style="flex:1;padding:10px 12px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--paper);color:var(--ink);font-family:inherit;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--jade)'" onblur="this.style.borderColor='var(--border)'">
+            <button onclick="analyzeMacro()" id="macroBtn" style="padding:10px 14px;background:var(--jade);color:#fff;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:opacity 0.15s;">🗺️ 분석</button>
+          </div>
+          <div id="macroResult" style="display:none;margin-top:10px;"></div>
+        </div>
+
         <div class="sec-blk" style="margin-bottom:0;">
           <div class="sec-lbl">추가 정보 <span class="opt">(선택)</span></div>
           <textarea class="extra-inp" id="extraInfo" placeholder="층수, 건물 연식, 주변 환경(산·도로·수목 등), 특이사항"></textarea>
@@ -481,7 +500,9 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 // ── STATE ──
 let selType='주거용 주택', selOri='', selMode='full';
 let imgB64=null, imgMime=null;
-let apiKey=localStorage.getItem('gemini_api_key')||'';
+let apiKey     = localStorage.getItem('gemini_api_key')  || '';
+let kakaoRest  = localStorage.getItem('kakao_rest_key')  || '';
+let kakaoJs    = localStorage.getItem('kakao_js_key')    || '';
 let lastResult=null;
 
 // ── INIT ──
@@ -498,16 +519,165 @@ function updateBtn(){
 }
 
 // ── MODAL ──
-function openModal(){document.getElementById('apiKeyInput').value=apiKey;document.getElementById('modalBg').classList.add('show');}
+function openModal(){
+  document.getElementById('apiKeyInput').value  = apiKey;
+  document.getElementById('kakaoRestInput').value = kakaoRest;
+  document.getElementById('kakaoJsInput').value   = kakaoJs;
+  document.getElementById('modalBg').classList.add('show');
+}
 function closeModal(){document.getElementById('modalBg').classList.remove('show');}
 function saveKey(){
-  const v=document.getElementById('apiKeyInput').value.trim();
-  if(!v){alert('API Key를 입력해 주세요.');return;}
-  apiKey=v; localStorage.setItem('gemini_api_key',v);
+  const v  = document.getElementById('apiKeyInput').value.trim();
+  const kr = document.getElementById('kakaoRestInput').value.trim();
+  const kj = document.getElementById('kakaoJsInput').value.trim();
+  if(!v){alert('Gemini API Key를 입력해 주세요.');return;}
+  apiKey=v;    localStorage.setItem('gemini_api_key', v);
+  kakaoRest=kr; localStorage.setItem('kakao_rest_key', kr);
+  kakaoJs=kj;   localStorage.setItem('kakao_js_key', kj);
   closeModal(); updateApiUI(); showState('placeholder');
 }
 
-// ── COMPASS ──
+// ── 거시 풍수 분석 (주소 기반) ──
+async function analyzeMacro() {
+  const addr = document.getElementById('addrInput').value.trim();
+  if (!addr) { alert('주소를 입력해 주세요.'); return; }
+  if (!kakaoRest) { alert('카카오 REST API Key가 설정되지 않았습니다.\n상단 ⚙ 설정에서 입력해 주세요.'); return; }
+  if (!apiKey)    { alert('Gemini API Key가 설정되지 않았습니다.'); return; }
+
+  const btn = document.getElementById('macroBtn');
+  const resultEl = document.getElementById('macroResult');
+  btn.textContent = '⏳ 분석 중...';
+  btn.disabled = true;
+  resultEl.style.display = 'none';
+
+  try {
+    // 1) 카카오 주소 → 위경도 변환
+    const geoRes = await fetch(
+      `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(addr)}`,
+      { headers: { Authorization: `KakaoAK ${kakaoRest}` } }
+    );
+    const geoData = await geoRes.json();
+    if (!geoData.documents?.length) throw new Error('주소를 찾을 수 없습니다. 정확한 도로명 주소를 입력해 주세요.');
+
+    const { x: lng, y: lat, address_name } = geoData.documents[0];
+
+    // 2) 주변 지형 키워드 검색 (산, 강, 하천)
+    const keywords = ['산', '강', '하천', '공원'];
+    const terrainResults = await Promise.all(keywords.map(kw =>
+      fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(kw)}&x=${lng}&y=${lat}&radius=3000&size=3`,
+        { headers: { Authorization: `KakaoAK ${kakaoRest}` } })
+        .then(r => r.json())
+        .then(d => ({ keyword: kw, places: (d.documents||[]).map(p => `${p.place_name}(${Math.round(p.distance)}m)`) }))
+    ));
+
+    // 3) 지형 정보 텍스트 구성
+    const terrainText = terrainResults
+      .map(t => t.places.length ? `${t.keyword}: ${t.places.slice(0,3).join(', ')}` : `${t.keyword}: 없음`)
+      .join('\n');
+
+    // 4) Gemini 거시 풍수 분석
+    const macroPrompt = `당신은 형기론(形氣論)에 정통한 전문 풍수지리 컨설턴트입니다.
+아래 위치 정보를 바탕으로 거시적 풍수지리를 분석하십시오.
+
+주소: ${address_name}
+위도: ${lat}, 경도: ${lng}
+
+반경 3km 내 주요 지형:
+${terrainText}
+
+아래 원칙을 적용하여 분석하십시오:
+· 배산임수(背山臨水): 뒤에 산, 앞에 물이 있는가
+· 장풍득수(藏風得水): 바람을 막는 지형인가
+· 좌청룡 우백호(左靑龍 右白虎): 좌우 지형 균형
+· 전착후관(前窄後寬): 지형 구조
+· 살기(煞氣): 주변 지형적 위험 요소
+
+반드시 순수 JSON만 반환하십시오:
+{
+  "address": "${address_name}",
+  "overallGrade": "상(上)",
+  "summary": "한 줄 총평 (40자 이내)",
+  "baesanImsu": {"grade": "좋음", "desc": "설명 (40자 이내)"},
+  "jangpungdeoksu": {"grade": "보통", "desc": "설명 (40자 이내)"},
+  "leftRightBalance": {"grade": "좋음", "desc": "설명 (40자 이내)"},
+  "issues": ["주의사항1 (30자 이내)", "주의사항2"],
+  "recommendation": "이 위치의 풍수 활용 조언 (60자 이내)"
+}`;
+
+    const gemRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents:[{role:'user', parts:[{text: macroPrompt}]}],
+          generationConfig:{temperature:0.3, maxOutputTokens:1024, responseMimeType:'application/json'}
+        })
+      }
+    );
+    const gemData = await gemRes.json();
+    let text = (gemData.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    const match = text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('분석 결과 처리 오류');
+    const r = JSON.parse(match[0]);
+
+    // 5) 결과 렌더링
+    const gradeColor = r.overallGrade?.includes('상') ? '#2A7A5C' : r.overallGrade?.includes('중') ? '#C47A1A' : '#B83232';
+    const mapUrl = `https://map.kakao.com/link/map/${encodeURIComponent(address_name)},${lat},${lng}`;
+
+    resultEl.innerHTML = `
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--shadow);">
+        <!-- 헤더 -->
+        <div style="background:#1A1A18;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:2px;">거시(巨視) 풍수 분석</div>
+            <div style="font-size:13px;font-weight:600;color:#C9A84C;">${r.address}</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:${gradeColor};background:rgba(255,255,255,0.08);padding:4px 12px;border-radius:6px;">${r.overallGrade||'—'}</div>
+          </div>
+        </div>
+        <!-- 총평 -->
+        <div style="padding:10px 14px;background:${gradeColor}18;font-size:12px;color:#1A1A18;font-weight:500;border-bottom:1px solid var(--border);">
+          ${r.summary||''}
+        </div>
+        <!-- 항목별 분석 -->
+        <div style="padding:12px 14px;">
+          ${[
+            ['🏔️ 배산임수', r.baesanImsu],
+            ['🌬️ 장풍득수', r.jangpungdeoksu],
+            ['⚖️ 좌청룡·우백호', r.leftRightBalance]
+          ].map(([label, item]) => item ? `
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+              <div style="flex-shrink:0;font-size:11px;font-weight:600;min-width:80px;color:var(--ink-mid);">${label}</div>
+              <div style="flex:1;">
+                <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:${item.grade?.includes('좋') ? '#E3F2EC' : item.grade?.includes('보통') ? '#FEF3E2' : '#FAEAEA'};color:${item.grade?.includes('좋') ? '#1A5440' : item.grade?.includes('보통') ? '#7a4a00' : '#7a1e1e'};margin-right:6px;">${item.grade||''}</span>
+                <span style="font-size:11px;color:var(--ink-mid);">${item.desc||''}</span>
+              </div>
+            </div>` : '').join('')}
+          ${r.issues?.length ? `
+            <div style="background:#FAEEDA;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+              <div style="font-size:10px;font-weight:600;color:#7a4a00;margin-bottom:4px;">⚠️ 주의사항</div>
+              ${r.issues.map(i=>`<div style="font-size:11px;color:#633806;line-height:1.6;">· ${i}</div>`).join('')}
+            </div>` : ''}
+          ${r.recommendation ? `
+            <div style="background:var(--jade-lt);border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+              <div style="font-size:10px;font-weight:600;color:var(--jade-dk);margin-bottom:3px;">💡 풍수 활용 조언</div>
+              <div style="font-size:11px;color:var(--ink-mid);line-height:1.6;">${r.recommendation}</div>
+            </div>` : ''}
+          <a href="${mapUrl}" target="_blank" style="display:block;text-align:center;padding:8px;background:var(--paper-2);border-radius:6px;font-size:11px;color:var(--jade-dk);font-weight:600;text-decoration:none;">🗺️ 카카오맵에서 위치 확인</a>
+        </div>
+      </div>`;
+    resultEl.style.display = 'block';
+
+  } catch(err) {
+    resultEl.innerHTML = `<div style="padding:10px 12px;background:#FAEAEA;border-radius:var(--r-sm);font-size:12px;color:#7a1e1e;">⚠️ ${err.message}</div>`;
+    resultEl.style.display = 'block';
+  } finally {
+    btn.textContent = '🗺️ 분석';
+    btn.disabled = false;
+  }
+}
+
+
 let compassWatcher = null;
 
 function degToDir(deg) {
