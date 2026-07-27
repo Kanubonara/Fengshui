@@ -384,35 +384,43 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--jade-dk);margin-bottom:4px;">📷 정면 <span style="color:var(--red);font-size:9px;">필수</span></div>
-              <div class="drop-zone" id="dz0" onclick="document.getElementById('fi0').click()">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">정면 업로드</div>
-              </div>
-              <input type="file" id="fi0" accept="image/*" onchange="handleFile(this.files[0],0)">
+              <label for="fi0" style="display:block;cursor:pointer;">
+                <div class="drop-zone" id="dz0">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">정면 업로드</div>
+                </div>
+              </label>
+              <input type="file" id="fi0" accept="image/*" style="display:none;" onchange="handleFile(this.files[0],0)">
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">↩️ 후면 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz1" onclick="document.getElementById('fi1').click()">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">후면 업로드</div>
-              </div>
-              <input type="file" id="fi1" accept="image/*" onchange="handleFile(this.files[0],1)">
+              <label for="fi1" style="display:block;cursor:pointer;">
+                <div class="drop-zone" id="dz1">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">후면 업로드</div>
+                </div>
+              </label>
+              <input type="file" id="fi1" accept="image/*" style="display:none;" onchange="handleFile(this.files[0],1)">
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">◀️ 좌측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz2" onclick="document.getElementById('fi2').click()">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">좌측 업로드</div>
-              </div>
-              <input type="file" id="fi2" accept="image/*" onchange="handleFile(this.files[0],2)">
+              <label for="fi2" style="display:block;cursor:pointer;">
+                <div class="drop-zone" id="dz2">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">좌측 업로드</div>
+                </div>
+              </label>
+              <input type="file" id="fi2" accept="image/*" style="display:none;" onchange="handleFile(this.files[0],2)">
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">▶️ 우측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz3" onclick="document.getElementById('fi3').click()">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">우측 업로드</div>
-              </div>
-              <input type="file" id="fi3" accept="image/*" onchange="handleFile(this.files[0],3)">
+              <label for="fi3" style="display:block;cursor:pointer;">
+                <div class="drop-zone" id="dz3">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">우측 업로드</div>
+                </div>
+              </label>
+              <input type="file" id="fi3" accept="image/*" style="display:none;" onchange="handleFile(this.files[0],3)">
             </div>
           </div>
           <div style="margin-top:6px;font-size:10px;color:var(--ink-soft);text-align:center;">정면 방향 기준: 좌측=정면 90° 왼쪽 · 우측=정면 90° 오른쪽 · 후면=반대 방향</div>
@@ -807,12 +815,9 @@ function handleFile(file, idx) {
     imgs[idx] = { b64: e.target.result.split(',')[1], mime: file.type, src: e.target.result };
     const dz = document.getElementById('dz' + idx);
     dz.classList.add('has-img');
-    dz.innerHTML = `
-      <div style="position:relative;">
-        <img src="${e.target.result}" style="width:100%;height:80px;object-fit:cover;display:block;border-radius:8px;">
-        <button onclick="clearImg(${idx});event.stopPropagation();" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-      </div>`;
-    dz.onclick = null;
+    dz.style.padding = '0';
+    dz.style.position = 'relative';
+    dz.innerHTML = `<img src="${e.target.result}" style="width:100%;height:90px;object-fit:cover;display:block;border-radius:8px;"><button onclick="clearImg(${idx});event.stopPropagation();event.preventDefault();" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;z-index:10;">✕</button>`;
     updateBtn();
   };
   reader.readAsDataURL(file);
@@ -822,13 +827,14 @@ function clearImg(idx) {
   imgs[idx] = null;
   const dz = document.getElementById('dz' + idx);
   dz.classList.remove('has-img');
+  dz.style.padding = '';
+  dz.style.position = '';
   dz.innerHTML = `<span class="dz-icon" style="font-size:20px;">📷</span><div class="dz-ttl" style="font-size:11px;">${SLOT_LABELS[idx]} 업로드</div>`;
-  dz.onclick = () => document.getElementById('fi' + idx).click();
   document.getElementById('fi' + idx).value = '';
   updateBtn();
 }
 
-// 드래그앤드롭 각 슬롯에 적용
+// 드래그앤드롭 — 데스크톱 전용
 [0,1,2,3].forEach(idx => {
   const dz = document.getElementById('dz' + idx);
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
