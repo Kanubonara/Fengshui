@@ -608,7 +608,7 @@ async function analyzeMacro() {
 
 적용 원칙: 배산임수, 장풍득수, 좌청룡우백호, 전착후관, 살기
 
-{"address":"${address_name}","overallGrade":"상(上)","summary":"총평(30자이내)","baesanImsu":{"grade":"좋음","desc":"설명(25자이내)"},"jangpungdeoksu":{"grade":"보통","desc":"설명(25자이내)"},"leftRightBalance":{"grade":"좋음","desc":"설명(25자이내)"},"issues":["주의사항1(20자이내)","주의사항2(20자이내)"],"recommendation":"조언(40자이내)"}`;
+{"overallGrade":"상(上)","summary":"총평(30자이내)","baesanImsu":{"grade":"좋음","desc":"설명(25자이내)"},"jangpungdeoksu":{"grade":"보통","desc":"설명(25자이내)"},"leftRightBalance":{"grade":"좋음","desc":"설명(25자이내)"},"issues":["주의사항1(20자이내)","주의사항2(20자이내)"],"recommendation":"조언(40자이내)"}`;
 
     const gemRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
@@ -624,6 +624,7 @@ async function analyzeMacro() {
     const match = text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
     if (!match) throw new Error('분석 결과 처리 오류');
     const r = JSON.parse(match[0]);
+    r.address = address_name; // 주소는 파싱 후 별도 추가
 
     // 5) 결과 렌더링
     const gradeColor = r.overallGrade?.includes('상') ? '#2A7A5C' : r.overallGrade?.includes('중') ? '#C47A1A' : '#B83232';
