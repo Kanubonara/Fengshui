@@ -524,6 +524,8 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 <script>
 // ── STATE ──
 let selType='주거용 주택', selOri='', selMode='';
+let imgs = [null, null, null, null];
+const SLOT_LABELS = ['정면','후면','좌측','우측'];
 let imgB64=null, imgMime=null;
 let apiKey     = localStorage.getItem('gemini_api_key')  || '';
 let kakaoRest  = localStorage.getItem('kakao_rest_key')  || '';
@@ -804,8 +806,7 @@ document.getElementById('modeGrid').addEventListener('click',e=>{
 });
 
 // ── FILE (4장) ──
-let imgs = [null, null, null, null];
-const SLOT_LABELS = ['정면','후면','좌측','우측'];
+
 
 
 
