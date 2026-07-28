@@ -381,46 +381,39 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 
         <div class="sec-blk">
           <div class="sec-lbl">공간 이미지 <span class="opt">(정면 필수 · 나머지 선택)</span></div>
+          <!-- 파일 input — body 레벨에서 직접 트리거 -->
+          <input type="file" id="fi0" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],0)">
+          <input type="file" id="fi1" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],1)">
+          <input type="file" id="fi2" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],2)">
+          <input type="file" id="fi3" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],3)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--jade-dk);margin-bottom:4px;">📷 정면 <span style="color:var(--red);font-size:9px;">필수</span></div>
-              <label style="display:block;cursor:pointer;">
-                <div class="drop-zone" id="dz0">
-                  <span class="dz-icon" style="font-size:20px;">📷</span>
-                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
-                </div>
-                <input type="file" id="fi0" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleFile(this.files[0],0)">
-              </label>
+              <div class="drop-zone" id="dz0" onclick="triggerUpload(0)">
+                <span class="dz-icon" style="font-size:20px;">📷</span>
+                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">↩️ 후면 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <label style="display:block;cursor:pointer;">
-                <div class="drop-zone" id="dz1">
-                  <span class="dz-icon" style="font-size:20px;">📷</span>
-                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
-                </div>
-                <input type="file" id="fi1" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleFile(this.files[0],1)">
-              </label>
+              <div class="drop-zone" id="dz1" onclick="triggerUpload(1)">
+                <span class="dz-icon" style="font-size:20px;">📷</span>
+                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">◀️ 좌측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <label style="display:block;cursor:pointer;">
-                <div class="drop-zone" id="dz2">
-                  <span class="dz-icon" style="font-size:20px;">📷</span>
-                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
-                </div>
-                <input type="file" id="fi2" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleFile(this.files[0],2)">
-              </label>
+              <div class="drop-zone" id="dz2" onclick="triggerUpload(2)">
+                <span class="dz-icon" style="font-size:20px;">📷</span>
+                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">▶️ 우측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <label style="display:block;cursor:pointer;">
-                <div class="drop-zone" id="dz3">
-                  <span class="dz-icon" style="font-size:20px;">📷</span>
-                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
-                </div>
-                <input type="file" id="fi3" accept="image/*,video/*" capture="environment" style="display:none;" onchange="handleFile(this.files[0],3)">
-              </label>
+              <div class="drop-zone" id="dz3" onclick="triggerUpload(3)">
+                <span class="dz-icon" style="font-size:20px;">📷</span>
+                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              </div>
             </div>
           </div>
           <div style="margin-top:6px;font-size:10px;color:var(--ink-soft);text-align:center;">정면 방향 기준: 좌측=정면 90° 왼쪽 · 우측=정면 90° 오른쪽 · 후면=반대 방향</div>
@@ -804,9 +797,14 @@ document.getElementById('modeGrid').addEventListener('click',e=>{
 });
 
 // ── FILE (4장) ──
-// imgs[0]=정면, imgs[1]=후면, imgs[2]=좌측, imgs[3]=우측
-let imgs = [null, null, null, null]; // {b64, mime}
+let imgs = [null, null, null, null];
 const SLOT_LABELS = ['정면','후면','좌측','우측'];
+
+function triggerUpload(idx) {
+  const input = document.getElementById('fi' + idx);
+  input.value = ''; // 같은 파일 재선택 허용
+  input.click();
+}
 
 function handleFile(file, idx) {
   if (!file) return;
