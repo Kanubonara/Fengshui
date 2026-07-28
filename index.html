@@ -381,38 +381,45 @@ footer{text-align:center;padding:20px 24px;font-size:11px;color:var(--ink-soft);
 
         <div class="sec-blk">
           <div class="sec-lbl">공간 이미지 <span class="opt">(정면 필수 · 나머지 선택)</span></div>
-          <!-- 파일 input — body 레벨에서 직접 트리거 -->
-          <input type="file" id="fi0" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],0)">
-          <input type="file" id="fi1" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],1)">
-          <input type="file" id="fi2" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],2)">
-          <input type="file" id="fi3" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;" onchange="handleFile(this.files[0],3)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--jade-dk);margin-bottom:4px;">📷 정면 <span style="color:var(--red);font-size:9px;">필수</span></div>
-              <div class="drop-zone" id="dz0" onclick="triggerUpload(0)">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              <div style="position:relative;">
+                <div class="drop-zone" id="dz0">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+                </div>
+                <input type="file" id="fi0" accept="image/*" onchange="handleFile(this.files[0],0)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:5;">
               </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">↩️ 후면 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz1" onclick="triggerUpload(1)">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              <div style="position:relative;">
+                <div class="drop-zone" id="dz1">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+                </div>
+                <input type="file" id="fi1" accept="image/*" onchange="handleFile(this.files[0],1)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:5;">
               </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">◀️ 좌측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz2" onclick="triggerUpload(2)">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              <div style="position:relative;">
+                <div class="drop-zone" id="dz2">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+                </div>
+                <input type="file" id="fi2" accept="image/*" onchange="handleFile(this.files[0],2)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:5;">
               </div>
             </div>
             <div>
               <div style="font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;">▶️ 우측 <span style="color:var(--ink-soft);font-size:9px;">선택</span></div>
-              <div class="drop-zone" id="dz3" onclick="triggerUpload(3)">
-                <span class="dz-icon" style="font-size:20px;">📷</span>
-                <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+              <div style="position:relative;">
+                <div class="drop-zone" id="dz3">
+                  <span class="dz-icon" style="font-size:20px;">📷</span>
+                  <div class="dz-ttl" style="font-size:11px;">탭하여 업로드</div>
+                </div>
+                <input type="file" id="fi3" accept="image/*" onchange="handleFile(this.files[0],3)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:5;">
               </div>
             </div>
           </div>
@@ -800,24 +807,31 @@ document.getElementById('modeGrid').addEventListener('click',e=>{
 let imgs = [null, null, null, null];
 const SLOT_LABELS = ['정면','후면','좌측','우측'];
 
-function triggerUpload(idx) {
-  const input = document.getElementById('fi' + idx);
-  input.value = ''; // 같은 파일 재선택 허용
-  input.click();
-}
+
 
 function handleFile(file, idx) {
-  if (!file) return;
+  if (!file) { console.log('파일 없음'); return; }
+  console.log('파일 수신:', file.name, file.type, file.size);
   if (file.size > 10*1024*1024) { alert('10MB 이하 이미지만 가능합니다.'); return; }
+  if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드 가능합니다.'); return; }
+
   const reader = new FileReader();
+  reader.onerror = () => { alert('파일 읽기 실패. 다시 시도해 주세요.'); };
   reader.onload = e => {
-    imgs[idx] = { b64: e.target.result.split(',')[1], mime: file.type, src: e.target.result };
-    const dz = document.getElementById('dz' + idx);
-    dz.classList.add('has-img');
-    dz.style.padding = '0';
-    dz.style.position = 'relative';
-    dz.innerHTML = `<img src="${e.target.result}" style="width:100%;height:90px;object-fit:cover;display:block;border-radius:8px;"><button onclick="clearImg(${idx});event.stopPropagation();event.preventDefault();" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;z-index:10;">✕</button>`;
-    updateBtn();
+    try {
+      const result = e.target.result;
+      imgs[idx] = { b64: result.split(',')[1], mime: file.type, src: result };
+      const dz = document.getElementById('dz' + idx);
+      dz.classList.add('has-img');
+      dz.style.padding = '0';
+      dz.style.position = 'relative';
+      dz.style.overflow = 'hidden';
+      dz.innerHTML = `<img src="${result}" style="width:100%;height:90px;object-fit:cover;display:block;">`;
+      updateBtn();
+      console.log('업로드 완료:', SLOT_LABELS[idx]);
+    } catch(err) {
+      alert('이미지 처리 오류: ' + err.message);
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -833,17 +847,7 @@ function clearImg(idx) {
   updateBtn();
 }
 
-// 드래그앤드롭 — 데스크톱 전용
-[0,1,2,3].forEach(idx => {
-  const dz = document.getElementById('dz' + idx);
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('image/')) handleFile(f, idx);
-  });
-});
+
 
 // ── STATE MANAGER ──
 function showState(s){
