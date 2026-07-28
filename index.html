@@ -802,7 +802,7 @@ document.getElementById('oriGrid').addEventListener('click',e=>{
 document.getElementById('modeGrid').addEventListener('click',e=>{
   const b=e.target.closest('.mode-btn');if(!b)return;
   document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on');selMode=b.dataset.v;
+  b.classList.add('on');selMode=b.dataset.v;updateBtn();
 });
 
 // ── FILE (4장) ──
